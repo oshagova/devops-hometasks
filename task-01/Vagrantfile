@@ -19,8 +19,8 @@ Vagrant.configure("2") do |config|
 
 config.vm.provision "file", source: "~/vagrant/task-01/index.php", destination: "/home/vagrant/"
 config.vm.provision "file", source: "~/vagrant/task-01/index.html", destination: "/home/vagrant/"
-config.vm.provision "file", source: "~/vagrant/task-01/sites.conf", destination: "/home/vagrant/"
-#config.vm.provision "file", source: "~/vagrant/task-01/site-dinamic.conf", destination: "/home/vagrant/" 
+config.vm.provision "file", source: "~/vagrant/task-01/site-static.conf", destination: "/home/vagrant/"
+config.vm.provision "file", source: "~/vagrant/task-01/site-dinamic.conf", destination: "/home/vagrant/" 
 
  config.vm.provision "shell", inline: <<-SHELL
      apt update
@@ -43,7 +43,7 @@ config.vm.provision "file", source: "~/vagrant/task-01/sites.conf", destination:
      
      a2dissite 000-default.conf
      a2ensite site-dinamic.conf
-     a2ensite sites.conf
+     a2ensite site-static.conf
      systemctl restart apache2
    SHELL
 end
