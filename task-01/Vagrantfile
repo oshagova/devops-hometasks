@@ -5,11 +5,10 @@ Vagrant.configure("2") do |config|
   
   config.vm.box = "generic/debian10"
 
-  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
-  config.vm.network "forwarded_port", guest: 80, host: 8081, host_ip: "127.0.0.1"
+  config.vm.network "forwarded_port", guest: 8080, host: 8080, host_ip: "127.0.0.1"
+  config.vm.network "forwarded_port", guest: 8081, host: 8081, host_ip: "127.0.0.1"
   
   config.vm.network "private_network", ip: "192.168.33.10"
-
   
 
   config.vm.provider "virtualbox" do |vb|
@@ -17,27 +16,28 @@ Vagrant.configure("2") do |config|
      vb.memory = "1024"
   end
 
-config.vm.provision "file", source: "~/vagrant/task-01/index.php", destination: "/home/vagrant/"
-config.vm.provision "file", source: "~/vagrant/task-01/index.html", destination: "/home/vagrant/"
-config.vm.provision "file", source: "~/vagrant/task-01/site-static.conf", destination: "/home/vagrant/"
-config.vm.provision "file", source: "~/vagrant/task-01/site-dinamic.conf", destination: "/home/vagrant/" 
+config.vm.provision "file", source: "C:/Users/shag/vagrant/task-01/index.php", destination: "/home/vagrant/"
+config.vm.provision "file", source: "C:/Users/shag/vagrant/task-01/index.html", destination: "/home/vagrant/"
+config.vm.provision "file", source: "C:/Users/shag/vagrant/task-01/site-static.conf", destination: "/home/vagrant/"
+config.vm.provision "file", source: "C:/Users/shag/vagrant/task-01/site-dinamic.conf", destination: "/home/vagrant/" 
 
  config.vm.provision "shell", inline: <<-SHELL
      apt update
      apt install -y apache2
      apt install -y php*
      apt install -y libapache2-mod-php
+	 apt install -y mc
      systemctl enable apache2
      systemctl start apache2
      
-     mkdir /var/www/html2
+     mkdir /var/www/html/site1
+     mkdir /var/www/html/site2
+     rm /var/www/html/index.html
      chmod 775 /var/www/html
-     chmod 775 /var/www/html2
      chown -R root:vagrant /var/www/html
-     chown -R root:vagrant /var/www/html2
     
-     cp /home/vagrant/index.php /var/www/html2
-     cp /home/vagrant/index.html /var/www/html
+     cp /home/vagrant/index.html /var/www/html/site1
+     cp /home/vagrant/index.php /var/www/html/site2
      cp /home/vagrant/site-static.conf /etc/apache2/sites-available
      cp /home/vagrant/site-dinamic.conf /etc/apache2/sites-available
      
