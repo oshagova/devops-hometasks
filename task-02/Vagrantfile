@@ -1,0 +1,26 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+Vagrant.configure("2") do |config|
+  
+  config.vm.box = "centos/8"
+
+  config.vm.provider "virtualbox" do |vb|
+#     vb.name = "newbox.vagrant.vm"
+     vb.memory = "1024"
+  end 
+  
+  config.vm.provision "shell", inline: <<-SHELL
+    yum install httpd -y
+    systemctl start httpd
+    systemctl enable httpd
+    yum install php php-fpm php-mysqlnd php-opcache php-gd php-xml php-mbstring -y
+    systemctl start php-fpm
+    systemctl enable php-fpm    
+    systemctl restart httpd  
+    yum install mariadb-server mariadb -y
+    systemctl start mariadb
+    systemctl enable mariadb
+  SHELL
+end
