@@ -1,2 +1,2 @@
-Link 1: Centos8+LAMP
-https://app.vagrantup.com/oshagova/boxes/centos8_lamp
+Link 1: Centos8+LAMPGA
+https://app.vagrantup.com/oshagova/boxes/centos8_lampGA/versions/1.2
