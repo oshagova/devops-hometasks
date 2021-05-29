@@ -1,26 +1,37 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-
 Vagrant.configure("2") do |config|
   
-  config.vm.box = "centos/8"
+  config.vm.box = "oshagova/centos8_lampGA"
+
+  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+  config.vm.network "forwarded_port", guest: 81, host: 8081, host_ip: "127.0.0.1"
+  
+  config.vm.network "private_network", ip: "192.168.33.10"
+  
 
   config.vm.provider "virtualbox" do |vb|
-#     vb.name = "newbox.vagrant.vm"
-     vb.memory = "1024"
-  end 
-  
-  config.vm.provision "shell", inline: <<-SHELL
-    yum install httpd -y
-    systemctl start httpd
-    systemctl enable httpd
-    yum install php php-fpm php-mysqlnd php-opcache php-gd php-xml php-mbstring -y
-    systemctl start php-fpm
-    systemctl enable php-fpm    
-    systemctl restart httpd  
-    yum install mariadb-server mariadb -y
-    systemctl start mariadb
-    systemctl enable mariadb
-  SHELL
+     vb.name = "sites_centos.vagrant.vm"
+  end
+
+config.vm.provision "file", source: "~/vagrant/task-02/index.php", destination: "/home/vagrant/"
+config.vm.provision "file", source: "~/vagrant/task-02/index.html", destination: "/home/vagrant/"
+config.vm.provision "file", source: "~/vagrant/task-02/sites.conf", destination: "/home/vagrant/"
+
+config.vm.provision "shell", inline: <<-SHELL
+     
+     yum install mc -y
+     mkdir /var/www/site1
+     mkdir /var/www/site2
+     chmod 775 /var/www
+     chown -R root:vagrant /var/www 
+    
+     cp /home/vagrant/index.html /var/www/site1
+     cp /home/vagrant/index.php /var/www/site2
+     sed -i '/Listen 80/a Listen 81' /etc/httpd/conf/httpd.conf
+     cp /home/vagrant/sites.conf /etc/httpd/conf.d/
+     service httpd restart
+     
+   SHELL
 end
