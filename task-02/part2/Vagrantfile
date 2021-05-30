@@ -1,0 +1,97 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  
+  config.vm.box = "debian/buster64"
+
+  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+  config.vm.network "forwarded_port", guest: 81, host: 8081, host_ip: "127.0.0.1"
+
+  config.vm.provider "virtualbox" do |vb|
+     vb.name = "debian_lxc.vm"
+  end
+
+config.vm.provision "file", source: "~/vagrant/task-02/part2/index.php", destination: "/home/vagrant/"
+config.vm.provision "file", source: "~/vagrant/task-02/part2/index.html", destination: "/home/vagrant/"
+
+config.vm.provision "shell", inline: <<-SHELL
+     
+     sudo apt-get install -y lxc lxc-templates -y
+     mkdir -p /home/vagrant/.config/lxc
+     cp /etc/lxc/default.conf /home/vagrant/.config/lxc/     
+     sudo sed -i 's/lxc.net.0.type = empty/lxc.net.0.type = veth/g' /home/vagrant/.config/lxc/default.conf
+     sudo sed -i 's/lxc.apparmor.profile = generated/lxc.apparmor.profile = unconfined/g' /home/vagrant/.config/lxc/default.conf
+     sudo echo "lxc.start.auto = 1" >> /home/vagrant/.config/lxc/default.conf
+     sudo echo "lxc.net.0.type  = veth" >> /home/vagrant/.config/lxc/default.conf
+     sudo echo "lxc.net.0.flags = up" >> /home/vagrant/.config/lxc/default.conf
+     sudo echo "lxc.net.0.link  = lxcbr0" >> /home/vagrant/.config/lxc/default.conf
+
+#настройка сети
+     sudo echo "USE_LXC_BRIDGE="true"" > /etc/default/lxc-net
+     sudo echo "LXC_BRIDGE="lxcbr0"" >> /etc/default/lxc-net
+     sudo echo "LXC_ADDR="10.0.3.1"" >> /etc/default/lxc-net
+     sudo echo "LXC_NETMASK="255.255.255.0"" >> /etc/default/lxc-net
+     sudo echo "LXC_NETWORK="10.0.3.0/24"" >> /etc/default/lxc-net
+     sudo echo "LXC_DHCP_RANGE="10.0.3.2,10.0.3.254"" >> /etc/default/lxc-net
+     sudo echo "LXC_DHCP_MAX="253"" >> /etc/default/lxc-net
+     sudo echo "LXC_DHCP_CONFILE="" >> /etc/default/lxc-net
+     sudo echo "LXC_DOMAIN="" >> /etc/default/lxc-net
+
+     sudo echo "vagrant veth lxcbr0 10" > /etc/lxc/lxc-usernet
+
+    sudo systemctl enable lxc-net    
+    sudo systemctl restart lxc-net
+
+    sudo lxc-create -t download -f /home/vagrant/.config/lxc/default.conf -n centos80 -- -d centos -r 8 -a amd64
+    sudo lxc-create -t download -f /home/vagrant/.config/lxc/default.conf -n centos81 -- -d centos -r 8 -a amd64
+    sudo lxc-start centos80
+    sudo lxc-start centos81
+    sleep 30
+
+    sudo lxc-attach centos80 -- yum -y install httpd
+    sudo lxc-attach centos80 -- yum -y install php
+    sudo lxc-attach centos80 -- systemctl enable httpd
+    sudo lxc-attach centos80 -- systemctl start httpd
+ 
+    sudo lxc-attach centos81 -- yum -y install httpd
+    sudo lxc-attach centos81 -- yum -y install php
+    sudo lxc-attach centos81 -- systemctl enable httpd
+    sudo lxc-attach centos81 -- systemctl start httpd
+    
+#первый
+    sudo mkdir -p /var/lib/lxc/centos80/rootfs/var/www/site1
+    sudo cp /home/vagrant/index.html /var/lib/lxc/centos80/rootfs/var/www/site1/
+    sudo echo "<VirtualHost *:80>" > /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "ServerAdmin admin@example.com" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "ServerName site1.ru" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "ServerAlias www.site1.ru" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "DocumentRoot /var/www/site1/" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "ErrorLog  /var/log/httpd/site1.ru-error.log" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "CustomLog /var/log/httpd/site1.ru-access.log combined" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    sudo echo "</VirtualHost>" >> /var/lib/lxc/centos80/rootfs/etc/httpd/conf.d/site1.conf
+    
+    sudo lxc-attach centos80 -- systemctl restart httpd
+
+#второй    
+    sudo mkdir -p /var/lib/lxc/centos81/rootfs/var/www/site2
+    sudo cp /home/vagrant/index.php /var/lib/lxc/centos81/rootfs/var/www/site2/
+    sudo sed -i '/Listen 80/a Listen 81' /var/lib/lxc/centos81/rootfs/etc/httpd/conf/httpd.conf
+    sudo echo "<VirtualHost *:81>" > /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "ServerAdmin admin@example.com" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "ServerName site2.ru" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "ServerAlias www.site2.ru" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "DocumentRoot /var/www/site2/" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "ErrorLog  /var/log/httpd/site2.ru-error.log" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "CustomLog /var/log/httpd/site2.ru-access.log combined" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    sudo echo "</VirtualHost>" >> /var/lib/lxc/centos81/rootfs/etc/httpd/conf.d/site2.conf
+    
+     sudo lxc-attach centos81 -- systemctl restart httpd
+#правила
+    centos80_ip=$(sudo lxc-info -i -n centos80 | cut -d : -f 2)
+    centos81_ip=$(sudo lxc-info -i -n centos81 | cut -d : -f 2)
+    sudo iptables -F
+    sudo iptables -t nat -I PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to-destination ${centos80_ip}:80
+    sudo iptables -t nat -I PREROUTING -i eth0 -p tcp --dport 81 -j DNAT --to-destination ${centos81_ip}:81
+   SHELL
+end
