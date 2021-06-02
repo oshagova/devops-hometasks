@@ -1,0 +1,46 @@
+---
+- name: Sites Centos_8 ansible
+  hosts: all
+  
+  tasks:
+  
+    - name: Create directories and assign rights
+      file:
+        path: /var/www/site1
+        state: directory
+          
+    - file:
+        path: /var/www/site2
+        state: directory
+     
+    - file:
+        path: /var/www
+        mode: 0775
+        recurse: yes
+        
+    - name: Copy files
+      copy:
+        src: /home/vagrant/index.html
+        dest: /var/www/site1/index.html
+        
+    - copy:
+        src: /home/vagrant/index.php
+        dest: /var/www/site2/index.php
+      
+    - copy:
+        src: /home/vagrant/sites.conf
+        dest: /etc/httpd/conf.d/sites.conf
+        
+    - name: Edit httpd.conf
+      lineinfile:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: '^Listen 81'
+        insertafter: '^Listen 80'
+        line: 'Listen 81'
+    
+    - name: Restart apache
+      become: yes
+      service:
+        name: httpd
+        state: restarted
+        
