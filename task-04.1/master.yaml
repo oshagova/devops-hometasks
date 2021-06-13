@@ -149,6 +149,11 @@
         state: started
         enabled: yes   
         
+    - name: sync
+      become: yes
+      shell: /opt/puppetlabs/bin/puppet agent -t
+      ignore_errors: yes
+    
     - name: sign cert
       become: yes
       shell: /opt/puppetlabs/bin/puppetserver ca sign --all
