@@ -1,0 +1,163 @@
+---
+- name: master config 
+  hosts: master
+  become: yes
+
+  tasks:
+     
+    - name: Edit /etc/hosts
+      blockinfile:
+        path: /etc/hosts
+        block: |
+          192.168.33.10 master.puppet puppet
+          192.168.33.11 slave1.puppet
+          192.168.33.12 slave2.puppet
+          
+          
+    - name: add key for puppet
+      rpm_key:
+        state: present
+        key: https://yum.puppet.com/RPM-GPG-KEY-puppet-20250406
+
+    
+    - name: Install epel repository
+      dnf:
+        name: 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm'
+        state: present    
+        
+    - name: Install yum puppet
+      dnf:
+        name: 'https://yum.puppet.com/puppet6-release-el-8.noarch.rpm'
+        state: present
+        
+    - name: Install puppetserver
+      yum:
+        name:
+        - mc
+        - git
+        - puppetserver
+        state: present
+        
+    - name: Edit /etc/sysconfig/puppetserver
+      replace:
+        path: /etc/sysconfig/puppetserver
+        regexp: '2g'
+        replace: '256m'
+      notify:
+        - restart puppetserver  
+        
+    - name: start and enable puppetservser
+      service:
+        name: puppetserver
+        state: started
+        enabled: yes
+    
+    - name: install r10k 
+      shell: /opt/puppetlabs/puppet/bin/gem install r10k
+      
+    - name: Create a directory r10k inside /etc/puppetlabs/
+      file:
+        path: /etc/puppetlabs/r10k
+        state: directory
+        mode: '0775'
+    
+    - name: Create r10k.yaml
+      copy:
+        dest: /etc/puppetlabs/r10k/r10k.yaml
+        content: |
+          :cachedir: '/var/cache/r10k'
+          :sources:
+            :my-org:
+              :remote: 'https://github.com/oshagova/puppet_repo.git'
+              :basedir: '/etc/puppetlabs/code/environments'    
+        
+    - name: sync files github repository 
+      shell: /opt/puppetlabs/puppet/bin/r10k deploy environment -p
+    
+    - name: Edit /etc/puppetlabs/puppet/puppet.conf for adding agent
+      blockinfile:
+        path: /etc/puppetlabs/puppet/puppet.conf
+        block: |
+           [agent]
+           server = master.puppet
+           runinterval = 1m
+           autosign = true
+      notify:
+        - restart puppetserver
+    
+  handlers:
+    - name: restart puppetserver
+      service:
+        name: puppetserver
+        state: restarted 
+
+
+
+- name: slaves config
+  hosts: slave
+  become: yes  
+
+  tasks:
+    - name: Edit hosts
+      blockinfile:
+        path: /etc/hosts
+        block: |
+           192.168.33.10 master.puppet puppet  
+    
+    - name: add key for puppet
+      rpm_key:
+        state: present
+        key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8    
+    
+    - name: Install epel repository
+      dnf:
+        name: 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm'
+        state: present    
+        
+    - name: add key for puppet
+      rpm_key:
+        state: present
+        key: https://yum.puppet.com/RPM-GPG-KEY-puppet-20250406
+    
+    - name: Install yum puppet
+      dnf:
+        name: 'https://yum.puppet.com/puppet6-release-el-8.noarch.rpm'
+        state: present
+        
+    - name: Install puppet-agent
+      yum:
+        name:
+        - mc
+        - puppet-agent
+        state: present
+        
+    - name: start and enable puppet
+      service:
+        name: puppet
+        state: started
+        enabled: yes
+    
+    - name: Edit /etc/puppetlabs/puppet/puppet.conf for adding agent
+      blockinfile:
+        path: /etc/puppetlabs/puppet/puppet.conf
+        block: |
+           [agent]
+           server = master.puppet
+           runinterval = 1m
+      notify:
+        - restart puppet
+        
+    - name: sign cert
+      shell: puppetserver ca list --all
+      delegate_to: master
+    
+    - name: sync
+      shell: puppet agent -t    
+            
+  handlers:
+    - name: restart puppet
+      service:
+        name: puppet
+        state: restarted
+        
+        
