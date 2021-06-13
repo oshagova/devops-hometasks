@@ -149,12 +149,12 @@
       notify:
         - restart puppet
         
-    - name: sign cert
-      become: yes
-      shell: /opt/puppetlabs/bin/puppetserver ca sign --all
+#    - name: sign cert
+#      become: yes
+#      shell: /opt/puppetlabs/bin/puppetserver ca sign --all
 #      puppet cert sign --all
 #      puppetserver ca sign --all
-      delegate_to: master.puppet
+#      delegate_to: master.puppet
     
     - name: sync
       shell: /opt/puppetlabs/bin/puppet agent --test    
