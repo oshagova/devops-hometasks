@@ -133,12 +133,6 @@
         - puppet-agent
         state: present
         
-    - name: start and enable puppet
-      service:
-        name: puppet
-        state: started
-        enabled: yes
-    
     - name: Edit /etc/puppetlabs/puppet/puppet.conf for adding agent
       blockinfile:
         path: /etc/puppetlabs/puppet/puppet.conf
@@ -148,16 +142,24 @@
            runinterval = 1m
       notify:
         - restart puppet
+    
+    - name: start and enable puppet
+      service:
+        name: puppet
+        state: started
+        enabled: yes   
         
-#    - name: sign cert
-#      become: yes
-#      shell: /opt/puppetlabs/bin/puppetserver ca sign --all
+    - name: sign cert
+      become: yes
+      shell: /opt/puppetlabs/bin/puppetserver ca sign --all
 #      puppet cert sign --all
 #      puppetserver ca sign --all
-#      delegate_to: master.puppet
+      delegate_to: master.puppet
+      ignore_errors: yes
     
     - name: sync
-      shell: /opt/puppetlabs/bin/puppet agent --test    
+      become: yes
+      shell: /opt/puppetlabs/bin/puppet agent -t    
             
   handlers:
     - name: restart puppet
