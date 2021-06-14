@@ -96,6 +96,7 @@
       service:
         name: puppet
         state: restarted
+        enabled: yes
 
 - name: slaves config
   hosts: slave
