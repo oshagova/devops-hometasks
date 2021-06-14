@@ -84,7 +84,7 @@
            runinterval = 1m
            autosign = true
       notify:
-        - restart puppetserver
+        - restart puppet
     
   handlers:
     - name: restart puppetserver
@@ -92,7 +92,10 @@
         name: puppetserver
         state: restarted 
 
-
+    - name: restart puppet
+      service:
+        name: puppet
+        state: restarted
 
 - name: slaves config
   hosts: slave
