@@ -2,9 +2,7 @@
 - name: master config 
   hosts: master
   become: yes
-
   tasks:
-    
     - name: Edit /etc/hosts
       blockinfile:
         path: /etc/hosts
@@ -12,13 +10,11 @@
           192.168.33.10 master.puppet puppet
           192.168.33.11 slave1.puppet
           192.168.33.12 slave2.puppet
-          
-          
+              
     - name: add key for puppet
       rpm_key:
         state: present
         key: https://yum.puppet.com/RPM-GPG-KEY-puppet-20250406
-
     
     - name: Install epel repository
       dnf:
@@ -37,7 +33,7 @@
         - git
         - puppetserver
         state: present
-        
+    
     - name: Edit /etc/sysconfig/puppetserver
       replace:
         path: /etc/sysconfig/puppetserver
@@ -45,7 +41,7 @@
         replace: '256m'
       notify:
         - restart puppetserver  
-        
+    
     - name: start and enable puppetservser
       service:
         name: puppetserver
@@ -74,29 +70,33 @@
     - name: sync files github repository 
       shell: /opt/puppetlabs/puppet/bin/r10k deploy environment -p
     
-        
-    - name: Edit /etc/puppetlabs/puppet/puppet.conf for adding agent
-      blockinfile:
+    - name: add host puppetserver
+      ini_file:
         path: /etc/puppetlabs/puppet/puppet.conf
-        block: |
-           [agent]
-           server = master.puppet
-           runinterval = 1m
-           autosign = true
-      notify:
-        - restart puppet
+        section: main
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { option: "server", value: "master.puppet" }
+        - { option: "autosign", value: "true" }    
     
+    - name: add agent puppetserver
+      ini_file:
+        path: /etc/puppetlabs/puppet/puppet.conf
+        section: agent
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { option: "server", value: "master.puppet" }
+        - { option: "runinterval", value: "1m" }
+    
+        
   handlers:
     - name: restart puppetserver
       service:
         name: puppetserver
         state: restarted 
 
-    - name: restart puppet
-      service:
-        name: puppet
-        state: restarted
-        enabled: yes
 
 - name: slaves config
   hosts: slave
@@ -108,8 +108,7 @@
         path: /etc/hosts
         block: |
            192.168.33.10 master.puppet puppet  
-    
-    
+        
     - name: add key for puppet
       rpm_key:
         state: present
@@ -137,6 +136,13 @@
         - puppet-agent
         state: present
         
+    - name: start and enable puppet
+      become: yes
+      service:
+        name: puppet
+        state: started
+        enabled: yes 
+    
     - name: Edit /etc/puppetlabs/puppet/puppet.conf for adding agent
       blockinfile:
         path: /etc/puppetlabs/puppet/puppet.conf
@@ -145,28 +151,7 @@
            server = master.puppet
            runinterval = 1m
       notify:
-        - restart puppet
-    
-    - name: start and enable puppet
-      service:
-        name: puppet
-        state: started
-        enabled: yes   
-        
-    
-    - name: Wait a bit
-      shell: sleep 30
-    - name: sign cert
-      become: yes
-      shell: /opt/puppetlabs/bin/puppetserver ca sign --all
-#      puppet cert sign --all
-#      puppetserver ca sign --all
-      delegate_to: master.puppet
-      ignore_errors: yes
-    
-    - name: sync
-      become: yes
-      shell: /opt/puppetlabs/bin/puppet agent -t    
+        - restart puppet  
             
   handlers:
     - name: restart puppet
