@@ -1,0 +1,238 @@
+---
+  - name: Jenkins setup
+    hosts: jenkins
+    become: true
+    tasks: 
+      - name: install essential packages
+        apt:
+          pkg:
+            - git
+            - build-essential
+            - default-jre
+          state: present
+          update_cache: true
+
+      - name: Add Jenkins key
+        apt_key:
+          url: "https://pkg.jenkins.io/debian-stable/jenkins.io.key"
+          state: present
+
+      - name: Add Jenkins repository
+        apt_repository:
+          repo: 'deb https://pkg.jenkins.io/debian-stable binary/'
+          state: present
+
+      - name: Install Jenkins binary package
+        apt:
+          name: jenkins
+          state: present
+          update_cache: true
+
+      - name: some necessary magic
+        lineinfile:
+          dest=/etc/default/jenkins
+          regexp='^JAVA_ARGS='
+          line='JAVA_ARGS="-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false -Dhudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID=true"'
+
+      - name: restart jenkins
+        service:
+          name: jenkins
+          state: restarted
+
+      - name: Jenkins is started
+        service:
+          name: jenkins
+          state: started
+          enabled: yes
+        changed_when: false
+        
+      - name: install essential plugins
+        jenkins_plugin:
+          name: "{{ item }}"
+          state: present
+        ignore_errors: yes
+        loop:
+            - antisamy-markup-formatter
+            - build-timeout
+            - caffeine-api
+            - checks-api
+            - cloudbees-folder
+            - command-launcher
+            - credentials
+            - credentials-binding
+            - display-url-api
+            - durable-task
+            - echarts-api
+            - email-ext
+            - font-awesome-api
+            - git
+            - git-client
+            - git-server
+            - github
+            - github-api
+            - github-branch-source
+            - golang
+            - gradle
+            - handlebars
+            - jackson2-api
+            - jaxb
+            - jdk-tool
+            - jjwt-api
+            - jquery3-api
+            - jsch
+            - junit
+            - ldap
+            - lockable-resources
+            - mailer
+            - matrix-auth
+            - matrix-project
+            - momentjs
+            - nexus-artifact-uploader
+            - okhttp-api
+            - pam-auth
+            - pipeline-build-step
+            - pipeline-github-lib
+            - pipeline-graph-analysis
+            - pipeline-input-step
+            - pipeline-milestone-step
+            - pipeline-model-api
+            - pipeline-model-definition
+            - pipeline-model-extensions
+            - pipeline-rest-api
+            - pipeline-stage-step
+            - pipeline-stage-tags-metadata
+            - pipeline-stage-view
+            - plain-credentials
+            - plugin-util-api
+            - popper-api
+            - popper2-api
+            - resource-disposer
+            - scm-api
+            - script-security
+            - snakeyaml-api
+            - ssh
+            - ssh-credentials
+            - ssh-slaves
+            - sshd
+            - structs
+            - timestamper
+            - token-macro
+            - trilead-api
+            - workflow-aggregator
+            - workflow-api
+            - workflow-basic-steps
+            - workflow-cps
+            - workflow-cps-global-lib
+            - workflow-durable-task-step
+            - workflow-job
+            - workflow-multibranch
+            - workflow-scm-step
+            - workflow-step-api
+            - workflow-support
+            - ws-cleanup
+            
+      - name: Jenkins is stopped
+        service:
+          name: jenkins
+          state: stopped
+      - copy:
+          src: /vagrant/files/
+          dest: /var/lib/jenkins/
+          owner: jenkins
+          group: jenkins
+          
+      - name: Jenkins is started
+        service:
+          name: jenkins
+          state: started
+
+  - name: Setup Nexus
+    hosts: nexus
+    become: yes
+
+    pre_tasks:
+      - apt:
+          name: gpg
+          state: present
+      - apt_key:
+          url: https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+      - apt_repository:
+          repo: deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ buster main
+          state: present
+          update_cache: true
+
+    vars:
+      java_packages:
+        - adoptopenjdk-8-hotspot-jre
+      nexus_admin_password: "admin"
+      nexus_annonymous_access: yes
+      nexus_config_maven: false
+      nexus_config_raw: true
+      nexus_repos_raw_hosted:
+        - name: word-cloud-generator
+          version_policy: release
+          write_policy: allow
+          strict_content_validation: false
+      nexus_roles:
+        - id: upload
+          name: upload
+          description: all uploaders
+          privileges:
+            - nx-admin
+          roles: []
+        - id: download
+          name: download
+          description: all downloaders
+          privileges:
+            - nx-search-read
+            - all-repos-read
+          roles: []
+      nexus_local_users:
+        - name: uploader
+          first_name: up
+          last_name: loader
+          email: support@company.com
+          password: "uploader"
+          roles:
+            - upload
+        - name: downloader
+          first_name: down
+          last_name: loader
+          email: support@company.com
+          password: "downloader"
+          roles:
+            - download
+    roles:
+      - role: geerlingguy.java
+      - role: ansible-thoteam.nexus3-oss
+
+  - name: Config servers Staging & Production
+    hosts: servers
+    become: yes
+    tasks:
+      - name: install essential packages
+        apt:
+          pkg:
+            - jq
+            - build-essential
+            - default-jre
+          state: present
+          update_cache: true
+
+      - name: create directory /opt/wordcloud
+        file:
+          path: /opt/wordcloud
+          state: directory
+          mode: '0755'
+          owner: vagrant
+
+      - name: copy wordcloud.service
+        copy:
+          dest: /etc/systemd/system/wordcloud.service
+          src: /vagrant/wordcloud.service
+
+      - name: start and enable wordcloud.service
+        service:
+          name: wordcloud.service
+          state: started
+          enabled: yes

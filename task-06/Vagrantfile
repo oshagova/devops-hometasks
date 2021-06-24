@@ -1,0 +1,31 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "debian/buster64"  
+  config.vm.box_check_update = false
+
+  hosts = [
+    { name: "production", forwarded_port: { guest: 8888, host: 8888 }, private_network: { ip: "192.168.33.13" }, memory: 512, cpus: 1 },
+    { name: "staging", forwarded_port: { guest: 8888, host: 8889 }, private_network: { ip: "192.168.33.12" }, memory: 512, cpus: 1 },
+    { name: "nexus", forwarded_port: { guest: 8081, host: 8081 }, private_network: { ip: "192.168.33.11" }, memory: 2048, cpus: 1 },
+    { name: "jenkins", forwarded_port: { guest: 8080, host: 8080 }, private_network: { ip: "192.168.33.15" }, memory: 1024, cpus: 2 },
+  ]
+
+  hosts.each do |host|
+    config.vm.define "#{host[:name]}.vm" do |hvm|
+      hvm.vm.network :forwarded_port, host[:forwarded_port] if host.key? :forwarded_port
+      hvm.vm.network :private_network, host[:private_network] if host.key? :private_network
+      hvm.vm.provider :virtualbox do |vb|
+        vb.name   = "#{host[:name]}.vm"
+      end
+    end
+  end
+
+  config.vm.provision :ansible_local do |ansible|
+    ansible.playbook = "playbook.yaml"
+    ansible.inventory_path = "inventory"
+    ansible.galaxy_role_file = "requirements.yaml"
+  end
+end
