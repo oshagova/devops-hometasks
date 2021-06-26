@@ -34,33 +34,35 @@
           regexp='^JAVA_ARGS='
           line='JAVA_ARGS="-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false -Dhudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID=true"'
 
-      # - name: restart jenkins
-        # service:
-          # name: jenkins
-          # state: restarted
-
-      # - name: Jenkins is started
-        # service:
-          # name: jenkins
-          # state: started
-          # enabled: yes
-        # changed_when: false
-
       - copy:
           src: /vagrant/files/
           dest: /var/lib/jenkins/
           owner: jenkins
           group: jenkins
+      
+      - name: restart jenkins
+        service:
+          name: jenkins
+          state: restarted
+      
+      - name: Jenkins is started
+        service:
+          name: jenkins
+          state: started
+          enabled: yes
+        changed_when: false
 
       - name: install plugins
         jenkins_plugin:
           name: "{{ item }}"
-          url: "http://localhost:8080"
-          jenkins_home: "/var/lib/jenkins"
-          url_username: "admin"
-          url_password: "admin"
+          url: http://localhost:8080
+          jenkins_home: /var/lib/jenkins
+          url_username: admin
+          url_password: admin
           state: present
           timeout: 30
+        retries: 3
+        ignore_errors: yes
         loop:
           - timestamper
           - nexus-artifact-uploader
@@ -74,9 +76,6 @@
           - gradle
           - ldap
           - nexus-artifact-uploader
-          - Pipeline
-          - pipeline-github-lib
-          - pipeline-stage-view
           - publish-over-ssh
           - ssh
           - ssh-agent
@@ -84,7 +83,7 @@
           - timestamper
           - workflow-aggregator
           - ws-cleanup
-          
+        
       - name: Jenkins is restarted
         service:
           name: jenkins
