@@ -64,26 +64,24 @@
         retries: 3
         ignore_errors: yes
         loop:
+          - cloudbees-folder
+          - build-timeout
           - timestamper
-          - nexus-artifact-uploader
-          - Pipeline
+          - ws-cleanup
+          - gradle
+          - workflow-aggregator
+          - github-branch-source
           - pipeline-github-lib
           - pipeline-stage-view
           - git
-          - github
-          - github-branch-source
-          - golang
-          - gradle
-          - ldap
-          - nexus-artifact-uploader
-          - publish-over-ssh
           - ssh
-          - ssh-agent
           - ssh-slaves
-          - timestamper
-          - workflow-aggregator
-          - ws-cleanup
-        
+          - matrix-auth
+          - pam-auth
+          - ldap
+          - golang
+          - nexus-artifact-uploader
+
       - name: Jenkins is restarted
         service:
           name: jenkins
