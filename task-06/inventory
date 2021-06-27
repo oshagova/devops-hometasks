@@ -14,5 +14,9 @@ production.vm
 staging.vm
 production.vm
 
+[servers:vars]
+ansible_user=vagrant
+ansible_password=vagrant
+
 [all:vars]
 ansible_connection=local

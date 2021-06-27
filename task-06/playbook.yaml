@@ -214,6 +214,7 @@
             - jq
             - build-essential
             - default-jre
+            - git
           state: present
           update_cache: true
 
@@ -234,3 +235,16 @@
           name: wordcloud.service
           state: started
           enabled: yes
+      
+      - name: Enable password authentificaton
+        replace:
+          path: /etc/ssh/sshd_config
+          regexp: '^PasswordAuthentication no$'
+          replace: 'PasswordAuthentication yes'
+        notify: restart sshd
+    
+    handlers:
+      - name: restart sshd
+        service:
+          name: sshd
+          state: restarted
