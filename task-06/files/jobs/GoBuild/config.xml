@@ -54,7 +54,7 @@ ls -l artifacts
       <nexusVersion>nexus3</nexusVersion>
       <protocol>http</protocol>
       <nexusUrl>192.168.33.11:8081/</nexusUrl>
-      <groupId>web-app</groupId>
+      <groupId>new-web-app</groupId>
       <version>1.$BUILD_NUMBER</version>
       <repository>word-cloud-generator</repository>
       <artifacts>
@@ -65,13 +65,13 @@ ls -l artifacts
           <file>artifacts/word-cloud-generator</file>
         </sp.sd.nexusartifactuploader.Artifact>
       </artifacts>
-      <credentialsId>d2618ad4-07a8-4087-ac1e-a3ea7cf01f79</credentialsId>
+      <credentialsId>nexus-creds</credentialsId>
     </sp.sd.nexusartifactuploader.NexusArtifactUploader>
     <org.jvnet.hudson.plugins.SSHBuilder plugin="ssh@2.6.1">
       <siteName>vagrant@192.168.33.12:22</siteName>
       <command>sudo service wordcloud stop
 
-curl -X GET -u admin:admin &quot;http://192.168.50.11:8081/repository/word-cloud-generator/1/word-cloud-generator/1.$BUILD_NUMBER/word-cloud-generator-1.$BUILD_NUMBER.gz&quot; -o /opt/wordcloud/word-cloud-generator.gz
+curl -X GET -u admin:admin &quot;http://192.168.33.11:8081/repository/word-cloud-generator/new-web-app/word-cloud-generator/1.$BUILD_NUMBER/word-cloud-generator-1.$BUILD_NUMBER.gz&quot; -o /opt/wordcloud/word-cloud-generator.gz
 gunzip -f /opt/wordcloud/word-cloud-generator.gz
 chmod +x /opt/wordcloud/word-cloud-generator
 
@@ -95,7 +95,7 @@ fi</command>
       <siteName>vagrant@192.168.33.13:22</siteName>
       <command>sudo service wordcloud stop
 
-curl -X GET -u admin:admin &quot;http://192.168.50.11:8081/repository/word-cloud-generator/1/word-cloud-generator/1.$BUILD_NUMBER/word-cloud-generator-1.$BUILD_NUMBER.gz&quot; -o /opt/wordcloud/word-cloud-generator.gz
+curl -X GET -u admin:admin &quot;http://192.168.33.11:8081/repository/word-cloud-generator/new-web-app/word-cloud-generator/1.$BUILD_NUMBER/word-cloud-generator-1.$BUILD_NUMBER.gz&quot; -o /opt/wordcloud/word-cloud-generator.gz
 gunzip -f /opt/wordcloud/word-cloud-generator.gz
 chmod +x /opt/wordcloud/word-cloud-generator
 

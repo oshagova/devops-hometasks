@@ -5,7 +5,7 @@
       <hostname>192.168.33.12</hostname>
       <username>vagrant</username>
       <port>22</port>
-      <credentialId>b8ab42a4-d53e-436f-b941-c2198ced0d68</credentialId>
+      <credentialId>servers</credentialId>
       <serverAliveInterval>0</serverAliveInterval>
       <timeout>0</timeout>
       <pty>false</pty>
@@ -14,7 +14,7 @@
       <hostname>192.168.33.13</hostname>
       <username>vagrant</username>
       <port>22</port>
-      <credentialId>b8ab42a4-d53e-436f-b941-c2198ced0d68</credentialId>
+      <credentialId>servers</credentialId>
       <serverAliveInterval>0</serverAliveInterval>
       <timeout>0</timeout>
       <pty>false</pty>
