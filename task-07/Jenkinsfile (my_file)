@@ -11,7 +11,7 @@ pipeline {
     stages{
         stage('Get source code'){
             steps{
-                git 'https://github.com/L-Eugene/word-cloud-generator.git'
+                git 'https://github.com/oshagova/word-cloud-generator.git'
             }
         }
         
@@ -55,7 +55,7 @@ pipeline {
         stage('Deploy staging'){
             steps{
                 script {
-                     def remote = [name: 'staging', host: '192.168.33.30', user: 'vagrant', password: 'vagrant', allowAnyHosts: true]
+                     def remote = [name: 'staging', host: '192.168.33.12', user: 'vagrant', password: 'vagrant', allowAnyHosts: true]
                      
                      sshCommand remote: remote, command: "curl -X GET -u admin:admin \"http://192.168.33.11:8081/repository/word-cloud-generator/web-app-pipeline/word-cloud-generator/1.${env.BUILD_NUMBER}/word-cloud-generator-1.${env.BUILD_NUMBER}.gz\" -o /opt/wordcloud/word-cloud-generator.gz"
                      sshCommand remote: remote, command: "gunzip -f /opt/wordcloud/word-cloud-generator.gz"
@@ -70,12 +70,12 @@ pipeline {
                 stage('Tests #1'){
                     agent any
                     steps{
-                        sh '''res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.30:8888/version | jq \'. | length\'`
+                        sh '''res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.12:8888/version | jq \'. | length\'`
                         if [ "1" != "$res" ]; then
                           exit 99
                         fi
 
-                        res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.30:8888/api | jq \'. | length\'`
+                        res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.12:8888/api | jq \'. | length\'`
                         if [ "7" != "$res" ]; then
                           exit 99
                         fi'''
@@ -85,12 +85,12 @@ pipeline {
                 stage('Tests #2'){
                     agent any
                     steps{
-                        sh '''res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.30:8888/version | jq \'. | length\'`
+                        sh '''res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.12:8888/version | jq \'. | length\'`
                         if [ "1" != "$res" ]; then
                           exit 99
                         fi
 
-                        res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.30:8888/api | jq \'. | length\'`
+                        res=`curl -s -H "Content-Type: application/json" -d \'{"text":"ths is a really really really important thing this is"}\' http://192.168.33.12:8888/api | jq \'. | length\'`
                         if [ "7" != "$res" ]; then
                           exit 99
                         fi'''
@@ -101,7 +101,7 @@ pipeline {
         stage('Deploy production'){
             steps{
                 script {
-                     def remote = [name: 'staging', host: '192.168.33.40', user: 'vagrant', password: 'vagrant', allowAnyHosts: true]
+                     def remote = [name: 'staging', host: '192.168.33.13', user: 'vagrant', password: 'vagrant', allowAnyHosts: true]
                      
                      sshCommand remote: remote, command: "curl -X GET -u admin:admin \"http://192.168.33.11:8081/repository/word-cloud-generator/web-app-pipeline/word-cloud-generator/1.${env.BUILD_NUMBER}/word-cloud-generator-1.${env.BUILD_NUMBER}.gz\" -o /opt/wordcloud/word-cloud-generator.gz"
                      sshCommand remote: remote, command: "gunzip -f /opt/wordcloud/word-cloud-generator.gz"
