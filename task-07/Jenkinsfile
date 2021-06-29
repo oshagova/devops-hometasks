@@ -55,7 +55,7 @@ pipeline {
                 script {
                      def remote = [name: 'staging', host: '192.168.33.12', user: 'vagrant', password: 'vagrant', allowAnyHosts: true]
                      
-                     sshCommand remote: remote, command: "curl -X GET -u admin:admin \"http://192.168.50.11:8081/repository/word-cloud-generator/1/word-cloud-generator/1.$BUILD_NUMBER/word-cloud-generator-1.$BUILD_NUMBER.gz\" -o /opt/wordcloud/word-cloud-generator.gz"
+                     sshCommand remote: remote, command: "curl -X GET -u admin:admin \"http://192.168.33.11:8081/repository/word-cloud-generator/web-app-pipeline/word-cloud-generator/1.41/word-cloud-generator-1.41.gz\" -o /opt/wordcloud/word-cloud-generator.gz"
                      sshCommand remote: remote, command: "gunzip -f /opt/wordcloud/word-cloud-generator.gz"
                      sshCommand remote: remote, command: "chmod +x /opt/wordcloud/word-cloud-generator"
                      sshCommand remote: remote, command: "sudo service wordcloud start "
