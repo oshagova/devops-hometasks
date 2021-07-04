@@ -1,0 +1,12 @@
+FROM golang:1.13.15 AS app
+
+RUN mkdir /wcg; \
+    cd /wcg; \
+    git clone https://github.com/L-Eugene/word-cloud-generator.git .; \
+    make
+
+FROM alpine:latest
+
+COPY --from=app /wcg/artifacts/linux/word-cloud-generator .
+
+CMD /word-cloud-generator
