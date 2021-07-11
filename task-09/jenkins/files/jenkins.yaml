@@ -1,0 +1,96 @@
+---
+  - name: Jenkins setup
+    hosts: localhost
+    become: true
+    tasks: 
+      - name: install essential packages
+        apt:
+          pkg:
+            - git
+            - build-essential
+            - default-jre
+            - mc
+            - jq
+            - wget
+            - curl
+            - gnupg
+          state: present
+          update_cache: true
+
+      - name: Add Jenkins key
+        apt_key:
+          url: "https://pkg.jenkins.io/debian-stable/jenkins.io.key"
+          state: present
+
+      - name: Add Jenkins repository
+        apt_repository:
+          repo: 'deb https://pkg.jenkins.io/debian-stable binary/'
+          state: present
+
+      - name: Install Jenkins binary package
+        apt:
+          name: jenkins
+          state: present
+          update_cache: true
+
+      - name: some necessary magic
+        lineinfile:
+          dest=/etc/default/jenkins
+          regexp='^JAVA_ARGS='
+          line='JAVA_ARGS="-Djenkins.install.runSetupWizard=false -Dhudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID=true -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"'
+
+      - name: Jenkins is restarted
+        service:
+          name: jenkins
+          state: restarted
+          enabled: yes
+        changed_when: false
+
+      - pause:
+          minutes: 2
+
+      - name: install plugins
+        jenkins_plugin:
+          name: "{{ item }}"
+          state: present
+          timeout: 300
+          with_dependencies: yes
+        register: plugin_result
+        until: plugin_result is success
+        retries: 5
+        delay: 10
+        loop:
+            - build-timeout
+            - credentials
+            - credentials-binding
+            - git
+            - github
+            - golang
+            - matrix-auth
+            - nexus-artifact-uploader
+            - pam-auth
+            - pipeline
+            - pipeline-build-step
+            - pipeline-github-lib
+            - pipeline-stage-step
+            - pipeline-stage-view
+            - ssh
+            - timestamper
+            - workflow-aggregator
+            - ws-cleanup
+
+      - copy:
+          src: /tmp/files/jenkins/
+          dest: /var/lib/jenkins/
+          owner: jenkins
+          group: jenkins
+
+      - name: remove file 
+        file:
+          path: /var/lib/jenkins/identity.key.enc
+          state: absent
+      
+      - name: restart jenkins
+        service:
+          name: jenkins
+          state: restarted

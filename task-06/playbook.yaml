@@ -36,17 +36,26 @@
           regexp='^JAVA_ARGS='
           line='JAVA_ARGS="-Djenkins.install.runSetupWizard=false -Dhudson.security.csrf.DefaultCrumbIssuer.EXCLUDE_SESSION_ID=true"'
 
-      - name: Jenkins is started
+      - name: Jenkins is restarted
         service:
           name: jenkins
-          state: started
+          state: restarted
           enabled: yes
         changed_when: false
+
+      - pause:
+          minutes: 2
 
       - name: install plugins
         jenkins_plugin:
           name: "{{ item }}"
           state: present
+          timeout: 300
+          with_dependencies: yes
+        register: plugin_result
+        until: plugin_result is success
+        retries: 5
+        delay: 10
         loop:
             - antisamy-markup-formatter
             - build-timeout
@@ -74,14 +83,17 @@
             - workflow-aggregator
             - workflow-job
             - ws-cleanup
-        retries: 5
-        ignore_errors: yes
 
       - copy:
           src: /vagrant/files/
           dest: /var/lib/jenkins/
           owner: jenkins
           group: jenkins
+          
+      - name: remove file 
+        file:
+          path: /var/lib/jenkins/identity.key.enc
+          state: absent
       
       - name: restart jenkins
         service:

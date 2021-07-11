@@ -1,0 +1,73 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.41">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.8.5"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.8.5">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.92">
+    <script>pipeline {
+    agent any
+
+    tools{
+        go &apos;Go 1.13.15&apos;
+    }
+    options {
+        timestamps()
+    }
+
+    stages{
+        stage(&apos;Get source code&apos;){
+            steps{
+                git &apos;https://github.com/L-Eugene/word-cloud-generator.git&apos;
+            }
+        }
+
+        stage(&apos;Using Make tests&apos;){
+            steps{
+                sh &apos;&apos;&apos;export GOPATH=$WORKSPACE
+                export PATH=&quot;$PATH:$(go env GOPATH)/bin&quot;
+                go get github.com/GeertJohan/go.rice/rice
+                go get github.com/oshagova/word-cloud-generator/wordyapi
+                go get github.com/gorilla/mux
+                make lint
+                make test&apos;&apos;&apos;
+            }
+        }
+
+        stage(&apos;Build job&apos;){
+            steps{
+                sh &apos;&apos;&apos;export GOPATH=$WORKSPACE
+                export PATH=&quot;$PATH:$(go env GOPATH)/bin&quot;
+                go get github.com/tools/godep
+                go get github.com/smartystreets/goconvey
+                go get github.com/GeertJohan/go.rice/rice
+                go get github.com/oshagova/word-cloud-generator/wordyapi
+                go get github.com/gorilla/mux
+                GOOS=linux GOARCH=amd64 go build -o ./artifacts/word-cloud-generator -v .
+                gzip -c ./artifacts/word-cloud-generator &gt; ./artifacts/word-cloud-generator.gz
+                rm ./artifacts/word-cloud-generator
+                mv ./artifacts/word-cloud-generator.gz ./artifacts/word-cloud-generator
+                ls -l artifacts&apos;&apos;&apos;
+            }
+        }
+
+        stage(&apos;Upload artifacts&apos;){
+            steps{
+                nexusArtifactUploader artifacts: [[artifactId: &apos;word-cloud-generator&apos;, classifier: &apos;&apos;, file: &apos;artifacts/word-cloud-generator&apos;, type: &apos;gz&apos;]], credentialsId: &apos;nexus-creds&apos;, groupId: &apos;web-app-pipeline&apos;, nexusUrl: &apos;192.168.33.11:8081/&apos;, nexusVersion: &apos;nexus3&apos;, protocol: &apos;http&apos;, repository: &apos;word-cloud-generator&apos;, version: &apos;1.$BUILD_NUMBER&apos;
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

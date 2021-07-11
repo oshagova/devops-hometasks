@@ -1,0 +1,66 @@
+---
+  - name: Setup Nexus
+    hosts: localhost
+    become: yes
+
+    pre_tasks:
+      - apt:
+          pkg:
+            - gpg
+            - build-essential
+            - rsync
+            - gnupg
+            - curl
+          state: present
+      - apt_key:
+          url: https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public
+      - apt_repository:
+          repo: deb https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/ buster main
+          state: present
+          update_cache: true
+    vars:
+      java_packages:
+        - adoptopenjdk-8-hotspot-jre
+      nexus_admin_password: "admin"
+      nexus_annonymous_access: yes
+      nexus_config_maven: false
+      nexus_config_raw: true
+      nexus_repos_raw_hosted:
+        - name: word-cloud-generator
+          version_policy: release
+          write_policy: allow
+      nexus_roles:
+        - id: upload
+          name: upload
+          description: all uploaders
+          privileges:
+            - nx-repository-view-raw-word-cloud-generator-*
+          roles: []
+        - id: download
+          name: download
+          description: all downloaders
+          privileges:
+            - nx-search-read
+            - all-repos-read
+          roles: []
+      nexus_local_users:
+        - username: uploader
+          state: present
+          first_name: uploader
+          last_name: loader
+          email: support@company.com
+          password: "uploader"
+          roles:
+            - upload
+        - username: downloader
+          state: present
+          first_name: downloader
+          last_name: loader
+          email: support@company.com
+          password: "downloader"
+          roles:
+            - download
+    roles:
+      - role: geerlingguy.java
+      - role: ansible-thoteam.nexus3-oss
+    ignore_errors: yes
